@@ -37,7 +37,6 @@ Further, the following packages are essential to making the whole thing work.
 library(sf)
 # The ones below aren't essential, but they will be used in the vignette
 library(dplyr)
-library(patchwork)
 ```
 
 

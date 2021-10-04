@@ -1,5 +1,6 @@
 exportPattern("^[[:alpha:]]+")
 importFrom(magrittr,"%>%")
+importFrom(patchwork,plot_layout)
 S3method(print,rs_election)
 S3method(summary,rs_election)
 S3method(summary,rs_redistribution)
