@@ -1,0 +1,30 @@
+Package: rsElections
+Type: Package
+Title: Calculates and maps the impact of electoral boundary changes
+Version: 0.1.0
+Author: Who wrote it
+Maintainer: The package maintainer <yourself@somewhere.net>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: CC BY 4.0
+Encoding: UTF-8
+LazyData: true
+Imports:
+    sf,
+    dplyr,
+    stringr,
+    magrittr,
+    ggvoronoi,
+    V8,
+    ggplot2,
+    patchwork
+Suggests: 
+    rmarkdown,
+    knitr,
+    testthat (>= 2.0.0)
+Config/testthat/edition: 2
+Depends: 
+    R (>= 2.10)
+SystemRequirements: Must be able to run Javascript
+RoxygenNote: 7.1.2
+VignetteBuilder: knitr

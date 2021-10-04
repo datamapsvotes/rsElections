@@ -1,0 +1,5 @@
+exportPattern("^[[:alpha:]]+")
+importFrom(magrittr,"%>%")
+S3method(print,rs_election)
+S3method(summary,rs_election)
+S3method(summary,rs_redistribution)

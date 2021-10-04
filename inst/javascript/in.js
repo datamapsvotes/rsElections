@@ -1,0 +1,1 @@
+global.color = require('color');

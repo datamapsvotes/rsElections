@@ -1,0 +1,134 @@
+---
+title: "Getting Started"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting-Started}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+options(rmarkdown.html_vignette.check_title = FALSE)
+```
+
+```{r setup}
+library(rsElections)
+```
+## Introduction
+The `rsElections` R package is designed to give a greater understanding of geographical trends in voting data. In Australian elections, data is often broken down by polling booth and while it is used in analysis it is rarely visualized. This package aims to create a framework to easily create good visualizations of polling-booth level results, and also to analyse the effects of changes in electoral boundaries.
+
+## Data required
+This type of analysis requires three different types of data.
+
+* The outline of the electorates (Typically as a shapefile)
+
+* Polling booth data with coordinate locations (Typically a spreadsheet)
+
+* The results by polling booth (Typically a spreadsheet)
+
+Without each of these, it simply is not possible to create the visualisations.
+
+Further, the following packages are essential to making the whole thing work.
+```{r message=FALSE}
+library(sf)
+# The ones below aren't essential, but they will be used in the vignette
+library(dplyr)
+library(patchwork)
+```
+
+
+## Step 1 - Preparing the data
+Unfortunately, data comes in many different forms and it is difficult to write a package that deals with all of them, so the data must be in some way prepared. Each different type of data goes through a different function so that the package can understand it.
+
+In this vignette, we will analyse 6 electorates in Melbourne's north from the 2019 Federal Election (McEwen, Calwell, Scullin, Jagajaga, Cooper and Wills), with data sourced from the [AEC Tally Room](https://results.aec.gov.au/24310/Website/HouseDefault-24310.htm) and [AEC GIS Data](https://www.aec.gov.au/electorates/gis/gis_datadownload.htm).
+
+Note: While it would be even easier to look at the whole state, the focus on these 5 is in order to demonstrate how the package works.
+
+### Electorate outlines 
+The electorate outlines are .shp files from [AEC GIS Data](https://www.aec.gov.au/electorates/gis/gis_datadownload.htm).
+```{r}
+# Note that for the purposes of demonstration and limiting the size of the dataset, the prepared electorate outline dataset was filtered before being imported here. The other datasets are filtered in the vignette.  
+north_melb_electorate_outlines <- Northern_Melb_FE_2019$electorate_outlines
+north_melb_electorate_outlines
+```
+
+Electorate outlines are recognized in `rsElections` through the `rs_boundary_set` function. You'll notice that `north_melb_electorate_outlines` has several columns that, for the purposes of calculating polling booth totals, aren't needed. `rs_boundary_set` removes these columns, renames the column name specified in `names` to `district` and also combines electorates that have several entries into one entry.
+
+```{r}
+north_melb_boundary_set <- north_melb_electorate_outlines %>%
+  rowwise() %>%
+  mutate(Elect_div = ifelse(Elect_div == "Mcewen", "McEwen", Elect_div)) %>%
+  ungroup() %>%
+  rs_boundary_set(names = "Elect_div", to_crs = 3111)
+north_melb_boundary_set
+```
+
+As we'll see later, the polling booths for McEwen have the district name listed as 'McEwen', whereas here it is listed as 'Mcewen'. As `rsElections` requires both names to be exactly right, the `mutate()` call ensures that the name here matches the electorate name for the polling booth data.
+
+In this case, it would be more accurate to use the `Sortname` column, but `Elect_div` is used instead in order to demonstrate this potential problem.
+
+### Polling booths
+
+This data can be downloaded from the [AEC Tally Room](https://results.aec.gov.au/24310/Website/HouseDefault-24310.htm). 
+
+```{r}
+north_melb_polling_booths <- Northern_Melb_FE_2019$polling_booths %>%
+  filter(DivisionNm %in% c("Calwell", "McEwen", "Scullin", "Jagajaga", "Wills", "Cooper")) %>%
+  rowwise() %>%
+  mutate(Longitude = ifelse(PollingPlaceTypeID == 1, Longitude,NA), Latitude = ifelse(PollingPlaceTypeID == 1, Latitude,NA))
+utils::head(north_melb_polling_booths, n=6)
+```
+
+A list of polling places is recognized through the `rs_polling_places` function. It takes a data frame of polling places along with the names of 4 required columns (pp_id, dist_names, longitude, latitude), renames those columns and returns a data frame as an `rs_polling_places` object.
+
+```{r}
+north_melb_rs_polling_booths <- rs_polling_places(north_melb_polling_booths,pp_id = "PollingPlaceID", dist_names = "DivisionNm", longitude = "Longitude", latitude = "Latitude")
+utils::head(north_melb_rs_polling_booths,n=6)
+```
+
+
+### Results by polling booth
+
+Data also downloadable from the AEC Tally Room, we will be using the Two Candidate Preferred results in this example.
+
+```{r}
+north_melb_TCP_results <- Northern_Melb_FE_2019$TCP_results %>%
+  filter(DivisionNm %in% c("Calwell", "McEwen", "Scullin", "Jagajaga", "Wills","Cooper"))
+utils::head(north_melb_TCP_results, n=6)
+```
+
+Election results are recognized in the package through the `rs_election_results` function. Again we see that variables such as DivisionNm and PollingPlace already exist and are already listed in the rs_polling_places dataset. Thus `rs_election_results` removes these unecessary pieces of data. To do so it requires a name of the result (in this case "Two Candidate Preferred"), the data frame created above as well as identifying the columns we wish to group by (mostly party codes), the identifier of the polling place in the `rs_polling_places` data and the column that identifies votes.
+
+Finally, as an election can have several election results, they must be combined into a list.
+
+```{r}
+north_melb_results_list <- list(rs_election_results(name = "Two Candidate Preferred", df = north_melb_TCP_results, pp_id = "PollingPlaceID", group_code = "PartyAb", votes = "OrdinaryVotes"))
+```
+
+## Step 2 - Create an rs_election
+
+An `rs_election` object combines these three pieces of data together under one variable, and creates a base map of voronoi polygons, which we can then fill in. It is created as follows:
+
+```{r}
+north_melb_rs_election <- rs_election(name = "Federal Election 2019 in 5 Northern Melbourne Seats",
+                                      boundaries = north_melb_boundary_set,
+                                      polling_places = north_melb_rs_polling_booths,
+                                      election_result_list = north_melb_results_list,
+                                      crs = 3111)
+north_melb_rs_election
+summary(north_melb_rs_election)
+```
+
+From there, `rs_election_as_sf` calculates the correct color for the voronoi polygon and `rs_plot` plots the voronoi with a legend. To do this, it needs a political color palette which is defined as follows:
+
+```{r fig.width = 5, fig.asp=1.2, out.width="60%", dev='svg', fig.align = "center"}
+party_colors <- data.frame(a=c("ALP","LP","GRN"),b=c("#DE3533","#0047AB","#00A651"))
+polcolpal <- rs_polcolpal_create(party_colors, seq(0.5,0.95,0.05))
+rs_election_as_sf(north_melb_rs_election, result_name = "Two Candidate Preferred", polcolpal = polcolpal) %>%
+  rs_plot()
+```
+
