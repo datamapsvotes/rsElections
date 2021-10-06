@@ -16,6 +16,9 @@ rs_election_results <- function(name, df, pp_id, group_code, votes){
   if (!all(sapply(list(name,pp_id,group_code,votes), inherits, what = "character"))){
     stop("'name', 'pp_id', 'group_code', 'votes' must all be of type character")
   }
+  if (!is.numeric(df[[votes]])){
+    stop("'votes' column must be of type numeric\nCheck to see if commas are used as a thousands separator in the 'votes' column")
+  }
   df <- dplyr::select(df,c(pp_id,group_code,votes)) %>%
     dplyr::rename("pp_id" = pp_id, "group_code" = group_code, "votes" = votes)
   rs_election_results <- list(name = name, results = df)
