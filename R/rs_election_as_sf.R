@@ -30,7 +30,9 @@ rs_election_as_sf <- function(election, result_name, polcolpal, adjustments=TRUE
     stop("There are no results to add to the map.\nOne possible cause is if 'single_group_code' doesn't refer to a group code in the result.")
   }
   if (!all(unique(result_to_join$group_code) %in% unique(polcolpal$values$pty))){
-    stop("'polcolpal' must have a colour for each group code in the result")
+    stop("'polcolpal' must have a colour for each group code in the result\n",
+         "The following group codes must have colours defined in the polcolpal: ",
+         paste0(setdiff(unique(result_to_join$group_code),unique(polcolpal$values$pty)),collapse = ", "))
   }
   rs_as_sf <- dplyr::left_join(election$voronoi,result_to_join, by = "pp_id") %>%
     dplyr::rowwise() %>%
