@@ -74,7 +74,7 @@ rs_polcolpal_create <- function(df, breaks){
             plot.background = ggplot2::element_rect(fill = "transparent", colour = "transparent"))
     return(plot)
   }
-  polcolpal <- list(values = df2,choose_color = choose_color,ggplot_scale = ggplot_scale, legend = legend)
+  polcolpal <- list(values = df2,choose_color = choose_color,ggplot_scale = ggplot_scale, legend = legend, group_colors = df)
   class(polcolpal) <- c("rs_polcolpal", class(polcolpal))
   polcolpal
 }
