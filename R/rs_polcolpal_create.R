@@ -15,22 +15,21 @@ rs_polcolpal_create <- function(df, breaks){
     # Made using Javascript, with two installed npm packages - Browserify and Color
     engine <- V8::v8(global = "window")
     engine$source(system.file("javascript", "out.js", package = "rsElections"))
-    engine$eval("function getColorsList(colorsAmount, colorsShiftAmount, mixColor, rotate, saturation, mainColor)  {
-    const colorsList = []
-     let step
-     for (step = 0; step < colorsAmount; step++) {
-         colorsList
-          .push(color(mainColor).rotate((step + 1) / colorsAmount * -rotate)
-          .saturate((step + 1) / colorsAmount * (saturation / 100))
-          .mix(color(mixColor), (colorsShiftAmount / 100) * (step + 1) / colorsAmount)
-          .hex())
+    engine$eval("function shades(base_color, number_of_colors, saturation_shade_pct, bw_mix_color)  {
+    var shades_array = []
+     for (let shade_number = 1; shade_number <= number_of_colors; shade_number++) {
+      var transformation_pct = shade_number / number_of_colors
+      var shade = color(base_color).saturate(transformation_pct * saturation_shade_pct)
+          .mix(color(bw_mix_color), transformation_pct * saturation_shade_pct)
+          .hex()
+      shades_array.push(shade)
       }
-     return colorsList
+     return shades_array
     }")
     color_JS_String <- paste0("'",color,"'")
-    darker_Col <- {engine$eval(paste0("getColorsList(4, 64, 'black', 0, 64, ",color_JS_String,")")) %>%
+    darker_Col <- {engine$eval(paste0("shades(",color_JS_String,", 4, 0.64, 'black')")) %>%
       stringr::str_split(",")}[[1]]
-    lighter_Col <- {engine$eval(paste0("getColorsList(5, 80, 'white', 0, 80, ",color_JS_String,")")) %>%
+    lighter_Col <- {engine$eval(paste0("shades(",color_JS_String,", 5, 0.80, 'white')")) %>%
       stringr::str_split(",")}[[1]] %>%
       rev()
     return(c(lighter_Col,color,darker_Col))
