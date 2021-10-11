@@ -11,17 +11,15 @@ rs_plot <- function(x, pdf_file_name = NA){
     ggplot2::scale_x_continuous(expand = c(0,0)) +
     ggplot2::scale_y_continuous(expand = c(0,0)) +
     ggplot2::scale_fill_manual(values = attr(x,"palette")$ggplot_scale) +
-    ggplot2::theme(panel.background = ggplot2::element_blank(),
-          plot.background = ggplot2::element_blank(),
-          axis.text = ggplot2::element_blank(),
+    ggplot2::theme(axis.text = ggplot2::element_blank(),
           axis.ticks = ggplot2::element_blank(),
           panel.grid = ggplot2::element_blank(),
           legend.position = "none") +
     attr(x,"palette")$legend(8,pty_codes = unique(x$group_code)) +
-    ggplot2::theme(panel.background = ggplot2::element_blank(),
-          plot.background = ggplot2::element_blank()) +
     patchwork::plot_layout(ncol = 1, widths = 1, heights = c(1.2,sqrt(2)-1.2)) &
-    ggplot2::theme(plot.margin = ggplot2::unit(c(0,0,0,0),"pt"))
+    ggplot2::theme(plot.margin = ggplot2::unit(c(0,0,0,0),"pt"),
+                   plot.background = ggplot2::element_rect(fill = "transparent", color = NA),
+                   panel.background = ggplot2::element_rect(fill = "transparent", color = NA))
   if (is.na(pdf_file_name)){
     plot
   }
